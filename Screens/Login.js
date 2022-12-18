@@ -1,10 +1,8 @@
 import React from "react";
 import {
-  Image,
   ScrollView,
   StyleSheet,
   Text,
-  TextInput,
   TouchableOpacity,
   View,
 } from "react-native";
@@ -13,34 +11,87 @@ import LoginWith from "../Components/LoginWith";
 import { globalStyle } from "../Constants/globalStyle";
 import LoginSignupBtn from "../Components/LoginSignupBtn";
 import TermOfUse from "../Components/TermOfUse";
+import { Formik } from "formik";
+import InputComponent from "../Components/InputComponent";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { useNavigation } from "@react-navigation/native";
+import * as yup from "yup";
+import axios from "axios";
+
 const Login = () => {
+  const Navigation = useNavigation();
+  const LoginSchme = yup.object().shape({
+    email: yup.string().email().required("Email is required"),
+    password: yup.string().required("Password is required"),
+  });
+  const loginRequest = async (values) => {
+    values.email = values.email.toLowerCase();
+    return axios
+      .post("https://api-dev.rescounts.com/api/v1/users/login", {
+        email: values.email,
+        password: values.password,
+      })
+      .then(function (response) {
+        AsyncStorage.setItem("app_token", response.data.token);
+        AsyncStorage.setItem("firstName", response.data.user.firstName);
+        Navigation.navigate("Home");
+      })
+      .catch(function (error) {});
+  };
+
   return (
     <ScrollView style={globalStyle.mainContainer}>
       <Header page="signin" />
-      <View style={styles.loginInputsContainer}>
-        <TextInput
-          placeholder="Your Email"
-          style={styles.sharedInputprops}
-          placeholderTextColor="#474746"
-        />
-        <View style={styles.passwordContainer}>
-          <TextInput
-            placeholder="Password"
-            style={[styles.sharedInputprops, styles.passwordStyle]}
-            placeholderTextColor="#474746"
-            secureTextEntry
-          />
-          <TouchableOpacity style={styles.visibiltyStyle}>
-            <Image
-              source={require("../assets/images/visibility2.png")}
-              style={styles.visibiltyImage}
+      <Formik
+        initialValues={{ email: "", password: "" }}
+        onSubmit={(values) => loginRequest(values)}
+        validationSchema={LoginSchme}
+      >
+        {({
+          handleChange,
+          handleSubmit,
+          values,
+          setFieldTouched,
+          errors,
+          touched,
+        }) => (
+          <View style={styles.loginInputsContainer}>
+            <InputComponent
+              placeholderText="Your Email"
+              css={styles.sharedInputprops}
+              placeholderTextColor="#474746"
+              handle={handleChange("email")}
+              inputValue={values.email}
+              blur={() => {
+                setFieldTouched("email");
+              }}
+              inputType="emailAddress"
+              touched={touched.email}
+              errors={errors.email}
             />
-          </TouchableOpacity>
-        </View>
-        <TouchableOpacity style={styles.loginButton}>
-          <Text style={styles.loginTxt}>Login</Text>
-        </TouchableOpacity>
-      </View>
+            <InputComponent
+              placeholderText="Password"
+              css={[styles.sharedInputprops, styles.passwordStyle]}
+              placeholderTextColor="#474746"
+              handle={handleChange("password")}
+              inputValue={values.password}
+              blur={() => {
+                setFieldTouched("password");
+              }}
+              inputType="emailAddress"
+              visibilityIcon={true}
+              secure={true}
+              touched={touched.password}
+              errors={errors.password}
+            />
+
+            <TouchableOpacity onPress={handleSubmit} style={styles.loginButton}>
+              <Text style={styles.loginTxt}>Login</Text>
+            </TouchableOpacity>
+          </View>
+        )}
+      </Formik>
+
       <TouchableOpacity style={styles.forgetPassword}>
         <Text style={styles.forgetText}>Forgot your password?</Text>
       </TouchableOpacity>
@@ -67,6 +118,7 @@ const styles = StyleSheet.create({
     height: 48,
     paddingHorizontal: 10,
   },
+  passwordStyle: { marginTop: 16 },
   passwordContainer: {
     marginTop: 10,
   },

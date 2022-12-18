@@ -1,7 +1,9 @@
 import React from "react";
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { useNavigation } from "@react-navigation/native";
 
 function LoginSignupBtn(props) {
+  const Navigation = useNavigation();
   return (
     <View
       style={[
@@ -18,11 +20,23 @@ function LoginSignupBtn(props) {
       </Text>
       <TouchableOpacity>
         <Text style={styles.signUpText}>
-          {props.page == "login"
-            ? " Sign Up"
-            : props.page == "signup"
-            ? " Login"
-            : null}
+          {props.page == "login" ? (
+            <TouchableOpacity
+              onPress={() => {
+                Navigation.navigate("Signup");
+              }}
+            >
+              <Text style={styles.signUpText}> Sign Up </Text>
+            </TouchableOpacity>
+          ) : props.page == "signup" ? (
+            <TouchableOpacity
+              onPress={() => {
+                Navigation.navigate("Login");
+              }}
+            >
+              <Text style={styles.signUpText}> Login</Text>
+            </TouchableOpacity>
+          ) : null}
         </Text>
       </TouchableOpacity>
     </View>

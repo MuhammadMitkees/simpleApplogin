@@ -1,10 +1,8 @@
 import React, { useState } from "react";
 import {
-  Image,
   ScrollView,
   StyleSheet,
   Text,
-  TextInput,
   TouchableOpacity,
   View,
 } from "react-native";
@@ -16,11 +14,53 @@ import LoginSignupBtn from "../Components/LoginSignupBtn";
 import Checkbox from "../Components/Checkbox";
 import TermOfUse from "../Components/TermOfUse";
 import FamilyAccount from "../Components/FamilyAccount";
-function Signup() {
-  const [personalAccountToggle, setPersonalAccountToggle] = useState(true);
+import InputComponent from "../Components/InputComponent";
+import { Formik } from "formik";
+import * as yup from "yup";
+import Toast from "react-native-root-toast";
+import axios from "axios";
+import { useNavigation } from "@react-navigation/native";
 
+function Signup() {
+  const Navigation = useNavigation();
+  const [personalAccountToggle, setPersonalAccountToggle] = useState(true);
+  const [popUp, setPopup] = useState(false);
+
+  const LoginSchme = yup.object().shape({
+    email: yup.string().email().required("Email is required"),
+    password: yup.string().required("Password is required"),
+    passwordConfirmation: yup
+      .string()
+      .oneOf([yup.ref("password"), null], "Passwords must match"),
+    firstName: yup.string().min(3).required("First Name is required"),
+    lastName: yup.string().min(3).required("Last Name is required"),
+  });
+  const registerRequest = async (values) => {
+    values.email = values.email.toLowerCase();
+    return axios
+      .post("https://api-dev.rescounts.com/api/v1/users", {
+        email: values.email,
+        password: values.password,
+        firstName: values.firstName,
+        lastName: values.lastName,
+        phoneNumber: values.phoneNumber,
+        passwordConfirmation: values.passwordConfirmation,
+      })
+      .then(function (response) {
+        setPopup(true);
+        setTimeout(() => {
+          Navigation.navigate("Login");
+        }, 3000);
+      })
+      .catch(function (error) {});
+  };
   return (
     <ScrollView style={globalStyle.mainContainer}>
+      {popUp && (
+        <View style={styles.popUpStyle}>
+          <Text>registered successfully</Text>
+        </View>
+      )}
       <Header page="signup" />
       <View style={styles.toggleContainer}>
         <TouchableOpacity
@@ -81,67 +121,134 @@ function Signup() {
         </TouchableOpacity>
       </View>
       {personalAccountToggle && (
-        <>
-          <View style={styles.inputsContainer}>
-            <TextInput
-              placeholder="First Name"
-              style={styles.sharedInputprops}
-              placeholderTextColor="#474746"
-            />
-            <TextInput
-              placeholder="Last Name"
-              style={styles.sharedInputprops}
-              placeholderTextColor="#474746"
-            />
-            <TextInput
-              placeholder="Email"
-              style={styles.sharedInputprops}
-              placeholderTextColor="#474746"
-            />
-            <TextInput
-              placeholder="Phone Number"
-              style={styles.sharedInputprops}
-              placeholderTextColor="#474746"
-            />
-            <View style={styles.passwordContainer}>
-              <TextInput
-                placeholder="Password"
-                style={[styles.sharedInputprops, styles.passwordStyle]}
-                placeholderTextColor="#474746"
-                secureTextEntry
-              />
-              <TouchableOpacity style={styles.visibiltyStyle}>
-                <Image
-                  source={require("../assets/images/visibility2.png")}
-                  style={styles.visibiltyImage}
-                />
-              </TouchableOpacity>
-            </View>
+        <Formik
+          initialValues={{
+            email: "",
+            password: "",
+            firstName: "",
+            lastName: "",
+            phoneNumber: "",
+            passwordConfirmation: "",
+          }}
+          onSubmit={(values) => registerRequest(values)}
+          validationSchema={LoginSchme}
+        >
+          {({
+            handleChange,
+            handleSubmit,
+            values,
+            setFieldTouched,
+            errors,
+            touched,
+          }) => (
             <View>
-              <TextInput
-                placeholder="Confirm Password"
-                style={[styles.sharedInputprops, styles.passwordStyle]}
-                placeholderTextColor="#474746"
-                secureTextEntry
-              />
-              <TouchableOpacity style={styles.visibiltyStyle}>
-                <Image
-                  source={require("../assets/images/visibility2.png")}
-                  style={styles.visibiltyImage}
+              <View style={styles.inputsContainer}>
+                <InputComponent
+                  placeholderText="First Name"
+                  css={styles.sharedInputprops}
+                  placeholderTextColor="#474746"
+                  inputType="name"
+                  inputValue={values.firstName}
+                  handle={handleChange("firstName")}
+                  blur={() => {
+                    setFieldTouched("firstName");
+                  }}
+                  touched={touched.firstName}
+                  errors={errors.firstName}
                 />
+                <InputComponent
+                  placeholderText="Last Name"
+                  css={styles.sharedInputprops}
+                  placeholderTextColor="#474746"
+                  inputValue={values.lastName}
+                  inputType="name"
+                  handle={handleChange("lastName")}
+                  blur={() => {
+                    setFieldTouched("lastName");
+                  }}
+                  touched={touched.lastName}
+                  errors={errors.lastName}
+                />
+                <InputComponent
+                  placeholderText="Email"
+                  css={styles.sharedInputprops}
+                  placeholderTextColor="#474746"
+                  inputType="emailAddress"
+                  inputValue={values.email}
+                  handle={handleChange("email")}
+                  blur={() => {
+                    setFieldTouched("email");
+                  }}
+                  touched={touched.email}
+                  errors={errors.email}
+                />
+                <InputComponent
+                  placeholderText="Phone Number"
+                  css={styles.sharedInputprops}
+                  placeholderTextColor="#474746"
+                  inputType="telephoneNumber"
+                  inputValue={values.phoneNumber}
+                  handle={handleChange("phoneNumber")}
+                  blur={() => {
+                    setFieldTouched("phoneNumber");
+                  }}
+                  touched={touched.phoneNumber}
+                  errors={errors.phoneNumber}
+                />
+                <InputComponent
+                  placeholderText="Password"
+                  css={styles.sharedInputprops}
+                  placeholderTextColor="#474746"
+                  secure={true}
+                  visibilityIcon
+                  inputType="password"
+                  inputValue={values.password}
+                  handle={handleChange("password")}
+                  blur={() => {
+                    setFieldTouched("password");
+                  }}
+                  touched={touched.password}
+                  errors={errors.password}
+                />
+                <InputComponent
+                  placeholderText="Confirm Password"
+                  css={styles.sharedInputprops}
+                  placeholderTextColor="#474746"
+                  secure={true}
+                  visibilityIcon
+                  inputType="password"
+                  inputValue={values.passwordConfirmation}
+                  handle={handleChange("passwordConfirmation")}
+                  blur={() => {
+                    setFieldTouched("passwordConfirmation");
+                  }}
+                  touched={touched.passwordConfirmation}
+                  errors={errors.passwordConfirmation}
+                />
+              </View>
+              <View style={styles.checkboxContainer}>
+                <AntDesign name="checksquare" size={24} color="#E9D023" />
+                <Text style={styles.savePassTxt}>Save password</Text>
+              </View>
+              <TouchableOpacity
+                onPress={handleSubmit}
+                style={styles.creatAccBtn}
+              >
+                <Text style={styles.creatAccTxt}>Create account</Text>
               </TouchableOpacity>
             </View>
-          </View>
-          <View style={styles.checkboxContainer}>
-            <AntDesign name="checksquare" size={24} color="#E9D023" />
-            <Text style={styles.savePassTxt}>Save password</Text>
-          </View>
+          )}
+        </Formik>
+      )}
+      {!personalAccountToggle && (
+        <>
+          <FamilyAccount />
+          <TouchableOpacity style={styles.creatAccBtn}>
+            <Text style={styles.creatAccTxt}>Create account</Text>
+          </TouchableOpacity>
         </>
       )}
-      {!personalAccountToggle && <FamilyAccount />}
-      <TouchableOpacity style={styles.creatAccBtn}>
-        <Text style={styles.creatAccTxt}>Create account</Text>
-      </TouchableOpacity>
+
       <LoginSignupBtn page="signup" />
       <View style={styles.checkboxesContainer}>
         <View style={styles.innerCheckboxContainer}>
@@ -161,6 +268,12 @@ function Signup() {
   );
 }
 const styles = StyleSheet.create({
+  popUpStyle: {
+    height: "100%",
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#BEBEBE",
+  },
   toggleContainer: {
     marginTop: 34,
     flexDirection: "row",
@@ -251,8 +364,5 @@ const styles = StyleSheet.create({
     textAlignVertical: "bottom",
   },
   sms: { marginTop: 24 },
-  yourInfo: {
-    shad,
-  },
 });
 export default Signup;
